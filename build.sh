@@ -40,7 +40,7 @@ done
 # Build each architecture separately and merge them; this works with just the Command Line Tools.
 BINARIES=()
 for arch in $ARCHS; do
-    echo "Building $arch…"
+    echo "Building ${arch}…"
     swift build -c release --triple "$arch-apple-macosx14.0"
     BINARIES+=("$(swift build -c release --triple "$arch-apple-macosx14.0" --show-bin-path)/ContextGauge")
 done
