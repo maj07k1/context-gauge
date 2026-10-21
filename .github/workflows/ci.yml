@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: write   # only used by the release step, which runs on version tags
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # build.sh numbers builds by commit count
+
+      - name: Test
+        run: swift test
+
+      - name: Build app
+        env:
+          VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '0.0.0-dev' }}
+          SOURCE_URL: ${{ github.server_url }}/${{ github.repository }}
+          TIP_JAR_URL: ${{ vars.TIP_JAR_URL }}
+        run: |
+          export VERSION="${VERSION#v}"
+          ./build.sh --zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Context-Gauge
+          path: build/*.zip
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" build/*.zip --title "$GITHUB_REF_NAME" --generate-notes
